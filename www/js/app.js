@@ -1,88 +1,24 @@
 var app = angular.module('testApp', []);
 
-function testController($scope, $q) {
+app.factory('log', function($rootScope) {
 
-	$scope.log = "";
+	$rootScope.log = "";
 
-	function requestPermission() {
-		var deferred = $q.defer();
-		log('- got deferred!')
-
-		serial.requestPermission(function (a) {
-			$scope.$apply(function() {
-				log('success? ' + a);
-				deferred.resolve();
-			});
-		}, function(thing) {
-			$scope.$apply(function() {
-				log('lolfail... ' + a);
-				deferred.reject();
-			});
-		})
-
-		return deferred.promise;
+	var func = function(text) {
+		$rootScope.log += text + "\r\n";
 	}
 
-	function openSerial() {
-		var deferred = $q.defer();
-		log('- got deferred!')
-
-		serial.open({baudRate: 115200}, function (a) {
-			$scope.$apply(function() {
-				deferred.resolve();
-			});
-		}, function(thing) {
-			$scope.$apply(function() {
-				log('lolfail... ' + a);
-				deferred.reject();
-			});
-		})
-
-		return deferred.promise;
+	func.raw = function(text) {
+		$rootScope.log += text;		
 	}
 
-	function readCallback(data) {
-		var view = new Uint8Array(data);
-		var result = "";
-		for(var i = 0; i < view.length; i++) {
-			result = result + String.fromCharCode(view[i]);
-		}
-		$scope.$apply(function() {
-			logRaw(result);
-		});
-	}
+	return func;
+});
 
-	function logRaw(text) {
-		$scope.log += text;
-	}
-
-	function log(text) {
-		$scope.log += text + "\r\n";
-	}
+function testController($scope, $q, serialConnection, log) {
 
 	log("Loading test...");
-	log("serial: " + serial)
-	requestPermission().then(function() {
-		return openSerial();
-	}, function() {
-		$scope.$apply(function() {
-			log('lolfail... ');
-		});
-	}).then(function() {
-		serial.registerReadCallback(readCallback, 
-		function () {
-			$scope.$apply(function() {
-				log('lolfail... ');
-			});
-		});
-		log('registered read...');
-		return;
-	}, function(){
-		$scope.$apply(function() {
-			log('lolfail... ');
-		});
-	});
-	log('OMGWTF...')
+	serialConnection.open();
 
 	$scope.getTemp = function() {
 		log("sent: M105");
